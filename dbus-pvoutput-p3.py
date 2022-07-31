@@ -142,6 +142,10 @@ def main():
     stats = smart_dict()
     voltages = smart_dict()
 
+
+    # Find vebus temp
+    temp = str(query(conn, "com.victronenergy.system", "/Dc/Battery/Temperature"))
+
     # Set the user timezone
     if 'TZ' not in os.environ:
         tz = query(conn, "com.victronenergy.settings", "/Settings/System/TimeZone")
@@ -167,17 +171,23 @@ def main():
 
     # Track grid consumption
     for meter in meters:
-        track(conn, consumers, meter, "/Ac/L1/Energy/Forward", meter)
+        #track(conn, consumers, meter, "/Ac/L1/Energy/Forward", meter)
+        track(conn, consumers, meter, "/Dc/System/Power", meter)
 
     # Track vebus consumption, from battery to input and output
-    track(conn, consumers, vebus, "/Energy/InverterToAcOut", "c1")
-    track(conn, consumers, vebus, "/Energy/InverterToAcIn1", "c2")
+    #track(conn, consumers, vebus, "/Energy/InverterToAcOut", "c1")
+    track(conn, consumers, "com.victronenergy.system", "/Dc/System/Power", "c1")
+    #track(conn, consumers, vebus, "/Energy/InverterToAcIn1", "c2")
 
     # Track power values
-    track(conn, stats, "com.victronenergy.system", "/Ac/Consumption/L1/Power", "pc")
+    #track(conn, stats, "com.victronenergy.system", "/Ac/Consumption/L1/Power", "pc")
+    #track(conn, stats, "com.victronenergy.system", "/Dc/Battery/Power", "pc")
+    track(conn, stats, "com.victronenergy.system", "/Dc/System/Power", "pc")
     track(conn, stats, "com.victronenergy.system", "/Dc/Pv/Power", "pg")
 
-    track(conn, voltages, vebus, "/Ac/Out/L1/V", "vo" )
+    #track(conn, voltages, vebus, "/Ac/Out/L1/V", "vo" )
+    track(conn, voltages, "com.victronenergy.system", "/Dc/Battery/Voltage", "vo")
+    #track(conn, voltages, charger, "/Pv/V", "vo")
     
     # Periodic work
     def _upload():
@@ -220,6 +230,7 @@ def main():
                 "v2": int(stats.pg),
                 "v3": int(energy_consumed*1000),
                 "v4": int(stats.pc),
+                "v5": float(temp),
                 "v6": float(voltages.vo),
                 "c1": 1
             }
